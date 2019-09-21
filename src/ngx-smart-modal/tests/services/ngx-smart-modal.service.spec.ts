@@ -163,6 +163,7 @@ describe('NgxSmartModalService', () => {
     app.identifier = 'test';
     app.openedClass = true;
     app.visible = true;
+    app.nsmDialog: Object = {};
 
     (service as any)._closeModal(app);
 
@@ -190,7 +191,7 @@ describe('NgxSmartModalService', () => {
     expect((service as any)._dismissModal(app)).toBeFalsy();
   })));
 
-  it('should add modal ( force )', inject([NgxSmartModalService, NgxSmartModalStackService], 
+  it('should add modal ( force )', inject([NgxSmartModalService, NgxSmartModalStackService],
     (service: NgxSmartModalService, stackService: NgxSmartModalStackService) => {
     spyOn(stackService, 'addModal');
 
@@ -285,7 +286,7 @@ describe('NgxSmartModalService', () => {
     expect((service as any)._toggleModal).toHaveBeenCalledWith('fake', true);
   }));
 
-  it('should get modal stack', inject([NgxSmartModalService, NgxSmartModalStackService], 
+  it('should get modal stack', inject([NgxSmartModalService, NgxSmartModalStackService],
     (service: NgxSmartModalService, stackService: NgxSmartModalStackService) => {
     spyOn(stackService, 'getModalStack').and.returnValue('fake');
 
@@ -296,14 +297,14 @@ describe('NgxSmartModalService', () => {
     expect(() => { service.getModal('fake'); }).toThrow(new Error('Cannot find modal with identifier fake'));
   }));
 
-  it('should get top opened modal', inject([NgxSmartModalService, NgxSmartModalStackService], 
+  it('should get top opened modal', inject([NgxSmartModalService, NgxSmartModalStackService],
     (service: NgxSmartModalService, stackService: NgxSmartModalStackService) => {
     spyOn(stackService, 'getTopOpenedModal').and.returnValue('fake');
 
     expect(service.getTopOpenedModal()).toEqual('fake' as any);
   }));
 
-  it('should get higher index', inject([NgxSmartModalService, NgxSmartModalStackService], 
+  it('should get higher index', inject([NgxSmartModalService, NgxSmartModalStackService],
     (service: NgxSmartModalService, stackService: NgxSmartModalStackService) => {
     spyOn(stackService, 'getHigherIndex').and.returnValue(777);
 
@@ -344,7 +345,7 @@ describe('NgxSmartModalService', () => {
 
   it('should escape keyboard event', fakeAsync(inject([NgxSmartModalService], (service: NgxSmartModalService) => {
     const event = {
-      keyCode: 27
+      key: 'Escape'
     };
 
     const fixture = TestBed.createComponent(NgxSmartModalComponent);
@@ -368,11 +369,45 @@ describe('NgxSmartModalService', () => {
     tick(500);
     expect((service as any)._escapeKeyboardEvent(event)).toBeFalsy();
 
-    event.keyCode = 28;
+    event.key = 'Tab';
     expect((service as any)._escapeKeyboardEvent(event)).toBeFalsy();
 
-    event.keyCode = 27;
+    event.key = 'Escape';
     spyOn(service, 'getTopOpenedModal').and.throwError('fake error');
     expect((service as any)._escapeKeyboardEvent(event)).toBeFalsy();
+  })));
+
+  it('should trap focus on tab keyboard event', fakeAsync(inject([NgxSmartModalService], (service: NgxSmartModalService) => {
+    const event = {
+      key: 'Tab'
+    };
+
+    const fixture = TestBed.createComponent(NgxSmartModalComponent);
+    const app = fixture.debugElement.componentInstance;
+    app.identifier = 'test';
+    app.visible = true;
+
+    service.addModal({ id: 'test', modal: app });
+
+    expect((service as any)._trapFocusModal(event)).toBeTruthy();
+
+    const app2 = fixture.debugElement.componentInstance;
+    app2.identifier = 'test2';
+    app2.visible = true;
+    app2.escapable = false;
+
+    service.addModal({ id: 'test2', modal: app2 });
+
+    expect((service as any)._trapFocusModal(event)).toBeFalsy();
+
+    tick(500);
+    expect((service as any)._trapFocusModal(event)).toBeFalsy();
+
+    event.key = 'Escape';
+    expect((service as any)._trapFocusModal(event)).toBeFalsy();
+
+    event.key = 'Tab';
+    spyOn(service, 'getTopOpenedModal').and.throwError('fake error');
+    expect((service as any)._trapFocusModal(event)).toBeFalsy();
   })));
 });
